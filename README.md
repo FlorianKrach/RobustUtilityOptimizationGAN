@@ -1,5 +1,6 @@
 # Robust Utility Optimization GAN
 
+This repository is the official implementation of the paper [Robust Utility Optimization via a GAN Approach]().
 
 ## Installation
 Download the repo, cd into it. 

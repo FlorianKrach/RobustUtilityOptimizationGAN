@@ -353,19 +353,25 @@ def plot_strategy_vs_refstrategy(
             Delta_pis_ref[i, :, 0] * X[i, :-1, 0] / S[i, :-1, 0]
         errorbarplot(
             axs[1], t[:-1], nb_stocks_ref_ntc, yerr=nb_stocks_Delta_ref,
-            color=colors[0], label=None)
+            color=colors[0],
+            label="$\\pi^{\\operatorname{ref}}_{\\operatorname{ntc}} \\pm "
+                  "c^{1/3} \\Delta "
+                  "\\pi^{\\operatorname{ref}}_{\\operatorname{ntc}}$",)
         if plot_ref_nb_stocks_NN:
             errorbarplot(
                 axs[1], t[:-1], nb_stocks_ref_ntc_X, yerr=nb_stocks_Delta_ref_X,
                 color="black", label="ref. #stocks & no-trade with NN wealth")
-        axs[1].plot(t[:-1], nb_stocks_ref, color=colors[1])
-        axs[1].plot(t[:-1], nb_stocks_model, color=colors[2])
+        axs[1].plot(t[:-1], nb_stocks_ref, color=colors[1],
+                    label="$\\pi^{\\operatorname{ref}}$",)
+        axs[1].plot(t[:-1], nb_stocks_model, color=colors[2],
+                    label="$\\pi^{\\operatorname{NN}}$",)
         axs[1].set_ylabel("# risky stocks")
         axs[1].set_title("Absolute trading strategy")
         axs[1].set_xlabel("t")
 
-        axs[0].legend(
-            bbox_to_anchor=(1.04, -0.1), loc="center left", borderaxespad=0)
+        axs[1].legend(
+            bbox_to_anchor=(0.5, -0.3), loc="upper center", borderaxespad=0,
+            ncol=3)
         fname = "{}id{}_strategy_vs_refstrategy_path{}.pdf".format(
             plot_path, model_id, i)
         fnames.append(fname)
@@ -607,6 +613,7 @@ def evaluate(
         load_saved_eval=True, plot_gen_disc_paths=None,
         plot_noisy_eval_paths=None, discount=False,
         plot_strategy_refstrategy=None, plot_ref_nb_stocks_NN=False,
+        test_data_dict=None,
         **kwargs
 ):
     """
@@ -640,6 +647,8 @@ def evaluate(
     :param plot_ref_nb_stocks_NN: bool, whether to plot the number of stocks
             of the reference strategy with the current wealth of the NN model
             in case of plot_strategy_refstrategy
+    :param test_data_dict: None or str, if not None, the data_dict to use for
+            the test data
     :param kwargs:
 
     :return:
@@ -666,6 +675,16 @@ def evaluate(
     dt, disc_dict, nb_steps, penalty_function_ref_value_drift, \
     utility_func, path_wise_penalty, analytic_pi, data_train, \
     ref_strategy = load
+
+    if test_data_dict is not None:
+        test_data_dict = eval("config.{}".format(test_data_dict))
+        data_val = data_utils.SDEIncrements(
+            load=True, verbose=1, idx=None, **test_data_dict)
+        dl_val = DataLoader(
+            dataset=data_val, collate_fn=data_utils.custom_collate_fn,
+            shuffle=False, batch_size=len(data_val),
+            num_workers=N_DATASET_WORKERS)
+        print("using test data dict: ", test_data_dict)
 
     if os.path.exists(eval_file) and load_saved_eval and noisy_eval:
         df = pd.read_csv(eval_file, index_col=0)
@@ -949,6 +968,8 @@ def evaluate_baseline(
         model_id=None, seed=364, load_best=False,
         saved_models_path=saved_models_path,
         plot_eval_paths=None, discount=False,
+        test_data_dict=None, compute_value_at_risk=None,
+        compute_for_ref_strategy=False,
         **kwargs
 ):
     """
@@ -965,6 +986,12 @@ def evaluate_baseline(
             evolution of the indicated batch samples (under baseline measure
             params) of S,X,mu,sigma,pi; in particular, mu_0 and Sigma_0 are used
     :param discount: bool, whether to discount stock vals and PV
+    :param test_data_dict: None or str, if not None, the data_dict to use for
+            the test data
+    :param compute_value_at_risk: None or float, if not None, the alpha level
+            for the value at risk to compute
+    :param compute_for_ref_strategy: bool, whether to compute the value at risk
+            for the reference strategy
     :param kwargs:
     :return:
     """
@@ -983,9 +1010,20 @@ def evaluate_baseline(
     ref_strategy = load
     which = "best" if load_best else "last"
 
+    if test_data_dict is not None:
+        test_data_dict = eval("config.{}".format(test_data_dict))
+        data_val = data_utils.SDEIncrements(
+            load=True, verbose=1, idx=None, **test_data_dict)
+        dl_val = DataLoader(
+            dataset=data_val, collate_fn=data_utils.custom_collate_fn,
+            shuffle=False, batch_size=len(data_val),
+            num_workers=N_DATASET_WORKERS)
+        print("using test data dict: ", test_data_dict)
+
     np.random.seed(seed)
     S = []
     X = []
+    X_refstrat = []
     mus = []
     Sigmas = []
     pis = []
@@ -1015,6 +1053,17 @@ def evaluate_baseline(
                 dWs, ref_params=ref_sig, analytic_pi=analytic_pi,
                 oracle_pi=oracle_pi, ref_params_drift=ref_mu,
                 return_paths=True)
+            if analytic_pi is None and ref_strategy is not None:
+                # safe the exp util of the reference strategy in the
+                #   analytic_exp_util_w_ref_arr
+                res = model.evaluate(
+                    dWs, ref_params=ref_sig, analytic_pi=None,
+                    oracle_pi=None, ref_params_drift=ref_mu,
+                    return_paths=True, ref_strategy=ref_strategy,
+                    return_Delta_pi=False)
+                exp_util_a = res[0]
+                _X_refstrat = res[7]
+                X_refstrat.append(_X_refstrat)
             S.append(_S)
             X.append(_X)
             mus.append(_mus)
@@ -1065,6 +1114,12 @@ def evaluate_baseline(
     files_to_send += plot_hist(
         X[:, -1, 0]/D, plot_path, model_id, which, postfix="baselineeval")
 
+    if analytic_pi is None and ref_strategy is not None:
+        X_refstrat = torch.cat(X_refstrat, dim=0).detach().numpy()
+        files_to_send += plot_hist(
+            X_refstrat[:, -1, 0] / D, plot_path, model_id, which,
+            postfix="baselineeval-refstrategy")
+
     if send:
         SBM.send_notification(
             text=None,
@@ -1072,7 +1127,26 @@ def evaluate_baseline(
             chat_id=CHAT_ID)
         time.sleep(5)
 
-    return model_id, expected_util_with_ref
+    return_vals = [model_id, expected_util_with_ref]
+    VaR_ref = None
+
+    if compute_value_at_risk is not None:
+        VaR = np.percentile(
+            -(X[:, -1, 0]/D - X[:, 0, 0]),
+            100 * (1 - compute_value_at_risk))
+        return_vals.append(VaR)
+
+        if analytic_pi is None and ref_strategy is not None:
+            VaR_ref = np.percentile(
+                -(X_refstrat[:, -1, 0] / D - X_refstrat[:, 0, 0]),
+                100 * (1 - compute_value_at_risk))
+
+    if compute_for_ref_strategy:
+        return_vals.append(analytic_expected_util_with_ref)
+        if compute_value_at_risk is not None:
+            return_vals.append(VaR_ref)
+
+    return return_vals
 
 
 def evaluate_garch(
@@ -1223,7 +1297,7 @@ def evaluate_models(
         load_saved_eval=True, discount=False,
         plot_strategy_refstrategy=None,
         plot_ref_nb_stocks_NN=False,
-        filename=None,
+        filename=None, test_data_dict=None,
         **kwargs):
     which = "best" if load_best else "last"
     time_id = int(time.time())
@@ -1244,7 +1318,8 @@ def evaluate_models(
                 noise_std_drift, noise_type, noisy_eval,
                 saved_models_path, load_saved_eval,
                 plot_gen_disc_paths, plot_noisy_eval_paths, discount,
-                plot_strategy_refstrategy, plot_ref_nb_stocks_NN)
+                plot_strategy_refstrategy, plot_ref_nb_stocks_NN,
+                test_data_dict)
             data.append([model_id, noise_std, noise_std_drift,
                          min, mean, median, std, CI_diff,
                          a_min, a_mean, a_median, a_std, a_CI_diff,
@@ -1257,7 +1332,7 @@ def evaluate_models(
             noise_std_drift, noise_type, noisy_eval,
             saved_models_path, load_saved_eval,
             plot_gen_disc_paths, plot_noisy_eval_paths, discount,
-            plot_strategy_refstrategy, plot_ref_nb_stocks_NN)
+            plot_strategy_refstrategy, plot_ref_nb_stocks_NN, test_data_dict)
                                         for model_id in model_ids)
     df_out = pd.DataFrame(
         data=data,
@@ -1298,7 +1373,7 @@ def evaluate_models_function(
         model_ids=None, load_best=False,
         saved_models_path=saved_models_path,
         function=evaluate_baseline,
-        col_name="", filename_default="model_evaluation_baseline",
+        col_names=[""], filename_default="model_evaluation_baseline",
         filename=None,
         **kwargs):
     which = "best" if load_best else "last"
@@ -1311,10 +1386,10 @@ def evaluate_models_function(
     data = []
     if nb_jobs == 1:
         for model_id in model_ids:
-            _, exp_util = function(
+            _data = function(
                 send=send, model_id=model_id, load_best=load_best,
                 saved_models_path=saved_models_path, **kwargs)
-            data.append([model_id, exp_util])
+            data.append(_data)
     else:
         data = Parallel(n_jobs=nb_jobs)(delayed(function)(
             send=send, model_id=model_id, load_best=load_best,
@@ -1322,7 +1397,7 @@ def evaluate_models_function(
                                         for model_id in model_ids)
     df_out = pd.DataFrame(
         data=data,
-        columns=["model_id", col_name,])
+        columns=["model_id",] + col_names)
     df_out.to_csv(filename)
 
     if send:
@@ -1336,15 +1411,23 @@ def evaluate_models_function(
 
 
 def evaluate_models_baseline(**kwargs):
+    cols = ["exp_util_with_baseline_par"]
+    if "compute_value_at_risk" in kwargs:
+        alpha = kwargs["compute_value_at_risk"]
+        cols += ["VaR_{}".format(alpha)]
+    if "compute_for_ref_strategy" in kwargs:
+        cols += ["refstrat_exp_util_with_baseline_par"]
+        if "compute_value_at_risk" in kwargs:
+            cols += ["VaR_{}_ref_strategy".format(alpha)]
     return evaluate_models_function(
         **kwargs, function=evaluate_baseline,
-        col_name="exp_util_with_baseline_par",
+        col_names=cols,
         filename_default="model_evaluation_baseline",)
 
 def evaluate_models_garch(**kwargs):
     return evaluate_models_function(
         **kwargs, function=evaluate_garch,
-        col_name="min_exp_util_with_garch",
+        col_names=["min_exp_util_with_garch"],
         filename_default="model_evaluation_garch",)
 
 

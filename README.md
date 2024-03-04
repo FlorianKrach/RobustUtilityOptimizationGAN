@@ -24,6 +24,11 @@ python code/data_utils.py --data_gen_dict=data_dict1 --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict2 --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict3 --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict0_1 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_1_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_1_test_large --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_2 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_2_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_2_test_large --DATA_NB_JOBS=4
 ```
 
 ### Training of models
@@ -150,6 +155,15 @@ python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost1 --NB_JOBS
 python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost1_1
 python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost1_2
 python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost1_baseline
+python code/run.py --NB_JOBS=1 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost1_nonoise
+```
+
+```shell
+python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost2 --NB_JOBS=48 --NB_CPUS=1 --SEND=True --first_id=1 --get_overview=TO_dict_lambdagrid_pwp_smalltranscost2 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost2
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost2_1
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost2_2
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost2_baseline
+python code/run.py --NB_JOBS=1 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost2_nonoise
 ```
 
 

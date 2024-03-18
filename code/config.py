@@ -627,6 +627,7 @@ TO_dict2 = dict(
 
 
 # ==============================================================================
+# Hanna
 
 # 4 layer NN as in paper
 nn4 = ((32, 'leaky_relu'), (32, 'leaky_relu'), (32, 'leaky_relu'), (32, 'leaky_relu'), 'leaky_sigmoid')
@@ -3005,7 +3006,7 @@ eval_model_dict_lambdagrid_pwp_smalltranscost1_nonoise = dict(
 
 plot_model_dict_lambdagrid_pwp_smalltranscost1_1 = dict(
     filename="model_eval_plot",
-    model_ids=[4],
+    model_ids=[4, 34],
     load_best=True,
     nb_evaluations=1,
     noise_std=0.0,
@@ -3243,7 +3244,7 @@ eval_model_dict_lambdagrid_pwp_smalltranscost2_nonoise = dict(
 
 plot_model_dict_lambdagrid_pwp_smalltranscost2_1 = dict(
     filename="model_eval_plot",
-    model_ids=[4],
+    model_ids=[4, 106],
     load_best=True,
     nb_evaluations=1,
     noise_std=0.0,
@@ -3282,7 +3283,1483 @@ plot_model_dict_lambdagrid_pwp_smalltranscost2_baseline = dict(
     saved_models_path=path_lambdagrid_pwp_smalltranscost2)
 
 
+# --------- smaller time horizon with large market------------
+r = 0.03
+data_dict0_3 = {
+    "S0": [1], "dt": 1/650., "r": r, "nb_steps": 65, "nb_samples": 200000,
+    "seed": 3940
+}
+data_dict0_3_test = {
+    "S0": [1], "dt": 1/650., "r": r, "nb_steps": 65, "nb_samples": 40000,
+    "seed": 3941
+}
+data_dict0_3_test_large = {
+    "S0": [1], "dt": 1/650., "r": r, "nb_steps": 65, "nb_samples": 100000,
+    "seed": 3942
+}
 
+T = 0.1
+mu_S = 0.07
+sigma_S = 0.35
+mu = [r+mu_S,]
+sigma = [[sigma_S,]]
+gamma = 0.5  # power of utility
+path_wise_ref_val1_2 = np.array(sigma)**2*T
+path_wise_ref_val2_2 = np.exp(np.array(mu)*T)
+ptc = 0.01  # proportional trading costs
+
+
+path_lambdagrid_pwp_smalltranscost3 = \
+    "{}saved_models_lambdagrid_pwp_smalltranscost3/".format(data_path)
+params_list_lambdagrid_pwp_smalltranscost3 = []
+
+# non-robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_2, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_3, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_4, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_5, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (rnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_6, disc_dict_no_disc_2, 0., 0., [0,1]),
+]:
+    param_dict_lambdagrid = dict(
+        test_size=[0.2],
+        data_dict=['data_dict0_3'],
+        epochs=[150],
+        learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+        lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+        lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+        beta1_D=[0.9, ], beta2_D=[0.999, ],
+        beta1_G=[0.9, ], beta2_G=[0.999, ],
+        opt_steps_D_G=[opt_s],
+        batch_size=[1000],
+        penalty_scaling_factor=[0.],
+        penalty_scaling_factor_drift=[0.],
+        initial_wealth=[1.],
+        utility_func=["powerc-{}".format(gamma)],
+        penalty_func=[None, ],
+        penalty_func_drift=[None, ],
+        penalty_function_ref_value=[sigma,],
+        penalty_function_ref_value_drift=[mu],
+        gen_dict=[gen],
+        disc_dict=[disc],
+        saved_models_path=[path_lambdagrid_pwp_smalltranscost3],
+        use_penalty_for_gen=[True],
+        eval_on_train=[False],
+        eval_noise_std=[e_n],
+        eval_noise_std_drift=[e_n_d],
+        eval_noise_seed=[8979],
+        eval_noise_type=["cumulative"],
+        trans_cost_base=[0],
+        trans_cost_perc=[ptc],
+        ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+            mu_S, sigma_S, gamma, ptc)],
+        seed=[364],
+    )
+    params_list_lambdagrid_pwp_smalltranscost3 += get_parameter_array(
+        param_dict=param_dict_lambdagrid)
+
+# fully robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, ffnn_dict1_d, 0.15, 0.02, [1,1]),]:
+    for l1 in [0.01, 0.5, 0.1, 1., 10, 100]:
+        for l2 in [0.01, 0.5, 0.1, 1., 10, 100]:
+            param_dict_lambdagrid = dict(
+                test_size=[0.2],
+                data_dict=['data_dict0_3'],
+                epochs=[150],
+                learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+                lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+                lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+                beta1_D=[0.9, ], beta2_D=[0.999, ],
+                beta1_G=[0.9, ], beta2_G=[0.999, ],
+                opt_steps_D_G=[opt_s],
+                batch_size=[1000],
+                penalty_scaling_factor=[0.],
+                penalty_scaling_factor_drift=[0.],
+                initial_wealth=[1.],
+                utility_func=["powerc-{}".format(gamma)],
+                penalty_func=[None, ],
+                penalty_func_drift=[None, ],
+                penalty_function_ref_value=[
+                    sigma, ],
+                penalty_function_ref_value_drift=[mu],
+                path_wise_penalty=[[
+                    {"path_functional": "config.get_quad_covar_log",
+                     "ref_value": path_wise_ref_val1_2.tolist(),
+                     "penalty_func": "config.get_penalty_function("
+                                     "'squarenorm-fro', None)",
+                     "scaling_factor": l1,
+                     "is_mean_penalty": False},
+                    {"path_functional": "config.get_mean_rel_return",
+                     "ref_value": path_wise_ref_val2_2.tolist(),
+                     "penalty_func": "lambda x,y: torch.linalg.norm(x-y, ord=2)**2",
+                     "scaling_factor": l2,
+                     "is_mean_penalty": True}]],
+                gen_dict=[gen],
+                disc_dict=[disc],
+                saved_models_path=[path_lambdagrid_pwp_smalltranscost3],
+                use_penalty_for_gen=[True],
+                eval_on_train=[False],
+                eval_noise_std=[e_n],
+                eval_noise_std_drift=[e_n_d],
+                eval_noise_seed=[8979],
+                eval_noise_type=["cumulative"],
+                trans_cost_base=[0],
+                trans_cost_perc=[ptc],
+                ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+                    mu_S, sigma_S, gamma, ptc)],
+                seed=[364,],
+            )
+            params_list_lambdagrid_pwp_smalltranscost3 += get_parameter_array(
+                param_dict=param_dict_lambdagrid)
+
+TO_dict_lambdagrid_pwp_smalltranscost3 = dict(
+    ids_from=1, ids_to=len(params_list_lambdagrid_pwp_smalltranscost3),
+    path=path_lambdagrid_pwp_smalltranscost3,
+    params_extract_desc=(
+        'gen_dict', 'disc_dict', 'learning_rate_D',
+        'learning_rate_G', 'opt_steps_D_G', 'batch_size',
+        "epochs", 'utility_func', 'initial_wealth',
+        "penalty_function_ref_value",
+        "penalty_function_ref_value_drift",
+        "path_wise_penalty-0-scaling_factor",
+        "path_wise_penalty-1-scaling_factor",
+        "data_dict", "eval_noise_std", "eval_noise_std_drift",
+        "eval_noise_type", "seed",
+        "trans_cost_perc", "trans_cost_base",),
+    vals_metric_extract=(
+        ("max", "eval_expected_utility", "eval_expected_utility",
+         "max-eval_expected_utility"),
+        ("last", "analytic_sol_penalty", "analytic_sol_penalty",
+         "analytic_sol_penalty"),
+        ("last", "analytic_sol_expected_utility",
+         "analytic_sol_expected_utility", "analytic_sol_expected_utility"),
+        ("max", "eval_expected_util_with_analytic_par",
+         "eval_expected_util_with_analytic_par",
+         "max-eval_expected_util_with_analytic_par"),
+        ("max", "eval_expected_util_with_noisy_par",
+         "eval_expected_util_with_noisy_par",
+         "max-eval_expected_util_with_noisy_par"),
+        ("max", "eval_expected_utility_with_ref_strategy_noisy_par",
+         "eval_expected_utility_with_ref_strategy_noisy_par",
+         "max-eval_expected_utility_with_ref_strategy_noisy_par")
+    ),
+    sortby=["min_exp_util_with_noisy_par"],
+    model_eval_file="model_evaluation1.csv",
+    plot_penalty_scaling_plots=dict(
+        psf_col1='path_wise_penalty-0-scaling_factor',
+        psf_col2='path_wise_penalty-1-scaling_factor',
+        target_col='min_exp_util_with_noisy_par',
+        remove_rows={"min_exp_util_with_noisy_par": np.nan,
+                     # 'path_wise_penalty-1-scaling_factor': 0.01
+                     },)
+)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost3 = dict(
+    filename="model_evaluation1",
+    model_ids=list(range(1, 1+len(params_list_lambdagrid_pwp_smalltranscost3))),
+    load_best=True,
+    nb_evaluations=1000,
+    noise_std=0.075,
+    noise_std_drift=0.01,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_3_test",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost3)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost3_nonoise = dict(
+    filename="model_evaluation2",
+    model_ids=list(range(1,8)),
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_3_test_large",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost3)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost3_1 = dict(
+    filename="model_eval_plot",
+    model_ids=[7, 43],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_3_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    plot_ref_nb_stocks_NN=False,
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost3)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost3_2 = dict(
+    filename="model_eval_plot",
+    model_ids=[],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.075,
+    noise_std_drift=0.01,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_3_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost3)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost3_baseline = dict(
+    which_eval="baseline",
+    model_ids=[6, 7, 43],
+    load_best=True,
+    plot_eval_paths=None,
+    discount=True,
+    test_data_dict="data_dict0_3_test_large",
+    compute_value_at_risk=0.05,
+    compute_for_ref_strategy=True,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost3)
+
+
+# --------- heavy tailed increments ------------
+r = 0.03
+data_dict0_4 = {
+    "S0": [1], "dt": 1/65., "r": r, "nb_steps": 65, "nb_samples": 200000,
+    "seed": 3940, "dist": "t", "df": 3.5,
+}
+data_dict0_4_test = {
+    "S0": [1], "dt": 1/65., "r": r, "nb_steps": 65, "nb_samples": 40000,
+    "seed": 3941, "dist": "t", "df": 3.5,
+}
+data_dict0_4_test_large = {
+    "S0": [1], "dt": 1/65., "r": r, "nb_steps": 65, "nb_samples": 100000,
+    "seed": 3942, "dist": "t", "df": 3.5,
+}
+
+T = 1.
+mu_S = 0.07
+sigma_S = 0.35
+mu = [r+mu_S,]
+sigma = [[sigma_S,]]
+gamma = 0.5  # power of utility
+path_wise_ref_val1_2 = np.array(sigma)**2*T
+path_wise_ref_val2_2 = np.exp(np.array(mu)*T)
+ptc = 0.01  # proportional trading costs
+
+
+path_lambdagrid_pwp_smalltranscost4 = \
+    "{}saved_models_lambdagrid_pwp_smalltranscost4/".format(data_path)
+params_list_lambdagrid_pwp_smalltranscost4 = []
+
+# non-robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_2, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_3, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_4, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_5, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (rnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_6, disc_dict_no_disc_2, 0., 0., [0,1]),
+]:
+    param_dict_lambdagrid = dict(
+        test_size=[0.2],
+        data_dict=['data_dict0_4'],
+        epochs=[150],
+        learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+        lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+        lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+        beta1_D=[0.9, ], beta2_D=[0.999, ],
+        beta1_G=[0.9, ], beta2_G=[0.999, ],
+        opt_steps_D_G=[opt_s],
+        batch_size=[1000],
+        penalty_scaling_factor=[0.],
+        penalty_scaling_factor_drift=[0.],
+        initial_wealth=[1.],
+        utility_func=["powerc-{}".format(gamma)],
+        penalty_func=[None, ],
+        penalty_func_drift=[None, ],
+        penalty_function_ref_value=[sigma,],
+        penalty_function_ref_value_drift=[mu],
+        gen_dict=[gen],
+        disc_dict=[disc],
+        saved_models_path=[path_lambdagrid_pwp_smalltranscost4],
+        use_penalty_for_gen=[True],
+        eval_on_train=[False],
+        eval_noise_std=[e_n],
+        eval_noise_std_drift=[e_n_d],
+        eval_noise_seed=[8979],
+        eval_noise_type=["cumulative"],
+        trans_cost_base=[0],
+        trans_cost_perc=[ptc],
+        ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+            mu_S, sigma_S, gamma, ptc)],
+        seed=[364,],
+    )
+    params_list_lambdagrid_pwp_smalltranscost4 += get_parameter_array(
+        param_dict=param_dict_lambdagrid)
+
+# fully robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, ffnn_dict1_d, 0.15, 0.02, [1,1]),]:
+    for l1 in [0.01, 0.5, 0.1, 1., 10, 100]:
+        for l2 in [0.01, 0.5, 0.1, 1., 10, 100]:
+            param_dict_lambdagrid = dict(
+                test_size=[0.2],
+                data_dict=['data_dict0_4'],
+                epochs=[150],
+                learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+                lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+                lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+                beta1_D=[0.9, ], beta2_D=[0.999, ],
+                beta1_G=[0.9, ], beta2_G=[0.999, ],
+                opt_steps_D_G=[opt_s],
+                batch_size=[1000],
+                penalty_scaling_factor=[0.],
+                penalty_scaling_factor_drift=[0.],
+                initial_wealth=[1.],
+                utility_func=["powerc-{}".format(gamma)],
+                penalty_func=[None, ],
+                penalty_func_drift=[None, ],
+                penalty_function_ref_value=[
+                    sigma, ],
+                penalty_function_ref_value_drift=[mu],
+                path_wise_penalty=[[
+                    {"path_functional": "config.get_quad_covar_log",
+                     "ref_value": path_wise_ref_val1_2.tolist(),
+                     "penalty_func": "config.get_penalty_function("
+                                     "'squarenorm-fro', None)",
+                     "scaling_factor": l1,
+                     "is_mean_penalty": False},
+                    {"path_functional": "config.get_mean_rel_return",
+                     "ref_value": path_wise_ref_val2_2.tolist(),
+                     "penalty_func": "lambda x,y: torch.linalg.norm(x-y, ord=2)**2",
+                     "scaling_factor": l2,
+                     "is_mean_penalty": True}]],
+                gen_dict=[gen],
+                disc_dict=[disc],
+                saved_models_path=[path_lambdagrid_pwp_smalltranscost4],
+                use_penalty_for_gen=[True],
+                eval_on_train=[False],
+                eval_noise_std=[e_n],
+                eval_noise_std_drift=[e_n_d],
+                eval_noise_seed=[8979],
+                eval_noise_type=["cumulative"],
+                trans_cost_base=[0],
+                trans_cost_perc=[ptc],
+                ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+                    mu_S, sigma_S, gamma, ptc)],
+                seed=[364,],
+            )
+            params_list_lambdagrid_pwp_smalltranscost4 += get_parameter_array(
+                param_dict=param_dict_lambdagrid)
+
+TO_dict_lambdagrid_pwp_smalltranscost4 = dict(
+    ids_from=1, ids_to=len(params_list_lambdagrid_pwp_smalltranscost4),
+    path=path_lambdagrid_pwp_smalltranscost4,
+    params_extract_desc=(
+        'gen_dict', 'disc_dict', 'learning_rate_D',
+        'learning_rate_G', 'opt_steps_D_G', 'batch_size',
+        "epochs", 'utility_func', 'initial_wealth',
+        "penalty_function_ref_value",
+        "penalty_function_ref_value_drift",
+        "path_wise_penalty-0-scaling_factor",
+        "path_wise_penalty-1-scaling_factor",
+        "data_dict", "eval_noise_std", "eval_noise_std_drift",
+        "eval_noise_type", "seed",
+        "trans_cost_perc", "trans_cost_base",),
+    vals_metric_extract=(
+        ("max", "eval_expected_utility", "eval_expected_utility",
+         "max-eval_expected_utility"),
+        ("last", "analytic_sol_penalty", "analytic_sol_penalty",
+         "analytic_sol_penalty"),
+        ("last", "analytic_sol_expected_utility",
+         "analytic_sol_expected_utility", "analytic_sol_expected_utility"),
+        ("max", "eval_expected_util_with_analytic_par",
+         "eval_expected_util_with_analytic_par",
+         "max-eval_expected_util_with_analytic_par"),
+        ("max", "eval_expected_util_with_noisy_par",
+         "eval_expected_util_with_noisy_par",
+         "max-eval_expected_util_with_noisy_par"),
+        ("max", "eval_expected_utility_with_ref_strategy_noisy_par",
+         "eval_expected_utility_with_ref_strategy_noisy_par",
+         "max-eval_expected_utility_with_ref_strategy_noisy_par")
+    ),
+    sortby=["min_exp_util_with_noisy_par"],
+    model_eval_file="model_evaluation2.csv",
+)
+
+# eval_model_dict_lambdagrid_pwp_smalltranscost4 = dict(
+#     filename="model_evaluation1",
+#     model_ids=list(range(1, 1+len(params_list_lambdagrid_pwp_smalltranscost4))),
+#     load_best=True,
+#     nb_evaluations=1000,
+#     noise_std=0.075,
+#     noise_std_drift=0.01,
+#     noise_type="cumulative",
+#     test_data_dict="data_dict0_4_test",
+#     saved_models_path=path_lambdagrid_pwp_smalltranscost4)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost4_nonoise = dict(
+    filename="model_evaluation2",
+    model_ids=list(range(1,8)),
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_4_test_large",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost4)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost4_1 = dict(
+    filename="model_eval_plot",
+    model_ids=[7],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_4_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    plot_ref_nb_stocks_NN=False,
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost4)
+
+# plot_model_dict_lambdagrid_pwp_smalltranscost4_2 = dict(
+#     filename="model_eval_plot",
+#     model_ids=[],
+#     load_best=True,
+#     nb_evaluations=1,
+#     noise_std=0.075,
+#     noise_std_drift=0.01,
+#     noise_type="cumulative",
+#     test_data_dict="data_dict0_4_test",
+#     plot_strategy_refstrategy=[0,1,2,3,4,],
+#     load_saved_eval=False,
+#     noisy_eval=False,
+#     saved_models_path=path_lambdagrid_pwp_smalltranscost4)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost4_baseline = dict(
+    which_eval="baseline",
+    model_ids=[7],
+    load_best=True,
+    plot_eval_paths=None,
+    discount=True,
+    test_data_dict="data_dict0_4_test_large",
+    compute_value_at_risk=0.05,
+    compute_for_ref_strategy=True,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost4)
+
+
+
+# --------- heavy tailed increments 2 ------------
+r = 0.03
+data_dict0_5 = {
+    "S0": [1], "dt": 1/65., "r": r, "nb_steps": 65, "nb_samples": 200000,
+    "seed": 3940, "dist": "t", "df": 20,
+}
+data_dict0_5_test = {
+    "S0": [1], "dt": 1/65., "r": r, "nb_steps": 65, "nb_samples": 40000,
+    "seed": 3941, "dist": "t", "df": 20,
+}
+data_dict0_5_test_large = {
+    "S0": [1], "dt": 1/65., "r": r, "nb_steps": 65, "nb_samples": 100000,
+    "seed": 3942, "dist": "t", "df": 20,
+}
+
+T = 1.
+mu_S = 0.07
+sigma_S = 0.35
+mu = [r+mu_S,]
+sigma = [[sigma_S,]]
+gamma = 0.5  # power of utility
+path_wise_ref_val1_2 = np.array(sigma)**2*T
+path_wise_ref_val2_2 = np.exp(np.array(mu)*T)
+ptc = 0.01  # proportional trading costs
+
+
+path_lambdagrid_pwp_smalltranscost5 = \
+    "{}saved_models_lambdagrid_pwp_smalltranscost5/".format(data_path)
+params_list_lambdagrid_pwp_smalltranscost5 = []
+
+# non-robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_2, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_3, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_4, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_5, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (rnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_6, disc_dict_no_disc_2, 0., 0., [0,1]),
+]:
+    param_dict_lambdagrid = dict(
+        test_size=[0.2],
+        data_dict=['data_dict0_5'],
+        epochs=[150],
+        learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+        lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+        lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+        beta1_D=[0.9, ], beta2_D=[0.999, ],
+        beta1_G=[0.9, ], beta2_G=[0.999, ],
+        opt_steps_D_G=[opt_s],
+        batch_size=[1000],
+        penalty_scaling_factor=[0.],
+        penalty_scaling_factor_drift=[0.],
+        initial_wealth=[1.],
+        utility_func=["powerc-{}".format(gamma)],
+        penalty_func=[None, ],
+        penalty_func_drift=[None, ],
+        penalty_function_ref_value=[sigma,],
+        penalty_function_ref_value_drift=[mu],
+        gen_dict=[gen],
+        disc_dict=[disc],
+        saved_models_path=[path_lambdagrid_pwp_smalltranscost5],
+        use_penalty_for_gen=[True],
+        eval_on_train=[False],
+        eval_noise_std=[e_n],
+        eval_noise_std_drift=[e_n_d],
+        eval_noise_seed=[8979],
+        eval_noise_type=["cumulative"],
+        trans_cost_base=[0],
+        trans_cost_perc=[ptc],
+        ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+            mu_S, sigma_S, gamma, ptc)],
+        seed=[364,],
+    )
+    params_list_lambdagrid_pwp_smalltranscost5 += get_parameter_array(
+        param_dict=param_dict_lambdagrid)
+
+# fully robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, ffnn_dict1_d, 0.15, 0.02, [1,1]),]:
+    for l1 in [0.01, 0.5, 0.1, 1., 10, 100]:
+        for l2 in [0.01, 0.5, 0.1, 1., 10, 100]:
+            param_dict_lambdagrid = dict(
+                test_size=[0.2],
+                data_dict=['data_dict0_5'],
+                epochs=[150],
+                learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+                lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+                lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+                beta1_D=[0.9, ], beta2_D=[0.999, ],
+                beta1_G=[0.9, ], beta2_G=[0.999, ],
+                opt_steps_D_G=[opt_s],
+                batch_size=[1000],
+                penalty_scaling_factor=[0.],
+                penalty_scaling_factor_drift=[0.],
+                initial_wealth=[1.],
+                utility_func=["powerc-{}".format(gamma)],
+                penalty_func=[None, ],
+                penalty_func_drift=[None, ],
+                penalty_function_ref_value=[
+                    sigma, ],
+                penalty_function_ref_value_drift=[mu],
+                path_wise_penalty=[[
+                    {"path_functional": "config.get_quad_covar_log",
+                     "ref_value": path_wise_ref_val1_2.tolist(),
+                     "penalty_func": "config.get_penalty_function("
+                                     "'squarenorm-fro', None)",
+                     "scaling_factor": l1,
+                     "is_mean_penalty": False},
+                    {"path_functional": "config.get_mean_rel_return",
+                     "ref_value": path_wise_ref_val2_2.tolist(),
+                     "penalty_func": "lambda x,y: torch.linalg.norm(x-y, ord=2)**2",
+                     "scaling_factor": l2,
+                     "is_mean_penalty": True}]],
+                gen_dict=[gen],
+                disc_dict=[disc],
+                saved_models_path=[path_lambdagrid_pwp_smalltranscost5],
+                use_penalty_for_gen=[True],
+                eval_on_train=[False],
+                eval_noise_std=[e_n],
+                eval_noise_std_drift=[e_n_d],
+                eval_noise_seed=[8979],
+                eval_noise_type=["cumulative"],
+                trans_cost_base=[0],
+                trans_cost_perc=[ptc],
+                ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+                    mu_S, sigma_S, gamma, ptc)],
+                seed=[364,],
+            )
+            params_list_lambdagrid_pwp_smalltranscost5 += get_parameter_array(
+                param_dict=param_dict_lambdagrid)
+
+TO_dict_lambdagrid_pwp_smalltranscost5 = dict(
+    ids_from=1, ids_to=len(params_list_lambdagrid_pwp_smalltranscost5),
+    path=path_lambdagrid_pwp_smalltranscost5,
+    params_extract_desc=(
+        'gen_dict', 'disc_dict', 'learning_rate_D',
+        'learning_rate_G', 'opt_steps_D_G', 'batch_size',
+        "epochs", 'utility_func', 'initial_wealth',
+        "penalty_function_ref_value",
+        "penalty_function_ref_value_drift",
+        "path_wise_penalty-0-scaling_factor",
+        "path_wise_penalty-1-scaling_factor",
+        "data_dict", "eval_noise_std", "eval_noise_std_drift",
+        "eval_noise_type", "seed",
+        "trans_cost_perc", "trans_cost_base",),
+    vals_metric_extract=(
+        ("max", "eval_expected_utility", "eval_expected_utility",
+         "max-eval_expected_utility"),
+        ("last", "analytic_sol_penalty", "analytic_sol_penalty",
+         "analytic_sol_penalty"),
+        ("last", "analytic_sol_expected_utility",
+         "analytic_sol_expected_utility", "analytic_sol_expected_utility"),
+        ("max", "eval_expected_util_with_analytic_par",
+         "eval_expected_util_with_analytic_par",
+         "max-eval_expected_util_with_analytic_par"),
+        ("max", "eval_expected_util_with_noisy_par",
+         "eval_expected_util_with_noisy_par",
+         "max-eval_expected_util_with_noisy_par"),
+        ("max", "eval_expected_utility_with_ref_strategy_noisy_par",
+         "eval_expected_utility_with_ref_strategy_noisy_par",
+         "max-eval_expected_utility_with_ref_strategy_noisy_par")
+    ),
+    sortby=["min_exp_util_with_noisy_par"],
+    model_eval_file="model_evaluation1.csv",
+    plot_penalty_scaling_plots=dict(
+        psf_col1='path_wise_penalty-0-scaling_factor',
+        psf_col2='path_wise_penalty-1-scaling_factor',
+        target_col='min_exp_util_with_noisy_par',
+        remove_rows={"min_exp_util_with_noisy_par": np.nan,
+                     # 'path_wise_penalty-1-scaling_factor': 0.01
+                     },)
+)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost5 = dict(
+    filename="model_evaluation1",
+    model_ids=list(range(1, 1+len(params_list_lambdagrid_pwp_smalltranscost5))),
+    load_best=True,
+    nb_evaluations=1000,
+    noise_std=0.075,
+    noise_std_drift=0.01,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_5_test",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost5)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost5_nonoise = dict(
+    filename="model_evaluation2",
+    model_ids=list(range(1,8)),
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_5_test_large",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost5)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost5_1 = dict(
+    filename="model_eval_plot",
+    model_ids=[7, 30],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_5_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    plot_ref_nb_stocks_NN=False,
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost5)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost5_2 = dict(
+    filename="model_eval_plot",
+    model_ids=[30],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.075,
+    noise_std_drift=0.01,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_5_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost5)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost5_baseline = dict(
+    which_eval="baseline",
+    model_ids=[7, 30],
+    load_best=True,
+    plot_eval_paths=None,
+    discount=True,
+    test_data_dict="data_dict0_5_test_large",
+    compute_value_at_risk=0.05,
+    compute_for_ref_strategy=True,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost5)
+
+
+
+# --------- larger time horizon with large market------------
+r = 0.03
+data_dict0_6 = {
+    "S0": [1], "dt": 1/130., "r": r, "nb_steps": 260, "nb_samples": 200000,
+    "seed": 3940
+}
+data_dict0_6_test = {
+    "S0": [1], "dt": 1/130., "r": r, "nb_steps": 260, "nb_samples": 40000,
+    "seed": 3941
+}
+data_dict0_6_test_large = {
+    "S0": [1], "dt": 1/130., "r": r, "nb_steps": 260, "nb_samples": 100000,
+    "seed": 3942
+}
+
+T = 2
+mu_S = 0.07
+sigma_S = 0.35
+mu = [r+mu_S,]
+sigma = [[sigma_S,]]
+gamma = 0.5  # power of utility
+path_wise_ref_val1_2 = np.array(sigma)**2*T
+path_wise_ref_val2_2 = np.exp(np.array(mu)*T)
+ptc = 0.01  # proportional trading costs
+
+
+path_lambdagrid_pwp_smalltranscost6 = \
+    "{}saved_models_lambdagrid_pwp_smalltranscost6/".format(data_path)
+params_list_lambdagrid_pwp_smalltranscost6 = []
+
+# non-robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_2, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_3, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_4, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_5, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (rnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_6, disc_dict_no_disc_2, 0., 0., [0,1]),
+]:
+    param_dict_lambdagrid = dict(
+        test_size=[0.2],
+        data_dict=['data_dict0_6'],
+        epochs=[150],
+        learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+        lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+        lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+        beta1_D=[0.9, ], beta2_D=[0.999, ],
+        beta1_G=[0.9, ], beta2_G=[0.999, ],
+        opt_steps_D_G=[opt_s],
+        batch_size=[1000],
+        penalty_scaling_factor=[0.],
+        penalty_scaling_factor_drift=[0.],
+        initial_wealth=[1.],
+        utility_func=["powerc-{}".format(gamma)],
+        penalty_func=[None, ],
+        penalty_func_drift=[None, ],
+        penalty_function_ref_value=[sigma,],
+        penalty_function_ref_value_drift=[mu],
+        gen_dict=[gen],
+        disc_dict=[disc],
+        saved_models_path=[path_lambdagrid_pwp_smalltranscost6],
+        use_penalty_for_gen=[True],
+        eval_on_train=[False],
+        eval_noise_std=[e_n],
+        eval_noise_std_drift=[e_n_d],
+        eval_noise_seed=[8979],
+        eval_noise_type=["cumulative"],
+        trans_cost_base=[0],
+        trans_cost_perc=[ptc],
+        ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+            mu_S, sigma_S, gamma, ptc)],
+        seed=[364],
+    )
+    params_list_lambdagrid_pwp_smalltranscost6 += get_parameter_array(
+        param_dict=param_dict_lambdagrid)
+
+# fully robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, ffnn_dict1_d, 0.15, 0.02, [1,1]),]:
+    for l1 in [0.01, 0.5, 0.1, 1., 10, 100]:
+        for l2 in [0.01, 0.5, 0.1, 1., 10, 100]:
+            param_dict_lambdagrid = dict(
+                test_size=[0.2],
+                data_dict=['data_dict0_6'],
+                epochs=[150],
+                learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+                lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+                lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+                beta1_D=[0.9, ], beta2_D=[0.999, ],
+                beta1_G=[0.9, ], beta2_G=[0.999, ],
+                opt_steps_D_G=[opt_s],
+                batch_size=[1000],
+                penalty_scaling_factor=[0.],
+                penalty_scaling_factor_drift=[0.],
+                initial_wealth=[1.],
+                utility_func=["powerc-{}".format(gamma)],
+                penalty_func=[None, ],
+                penalty_func_drift=[None, ],
+                penalty_function_ref_value=[
+                    sigma, ],
+                penalty_function_ref_value_drift=[mu],
+                path_wise_penalty=[[
+                    {"path_functional": "config.get_quad_covar_log",
+                     "ref_value": path_wise_ref_val1_2.tolist(),
+                     "penalty_func": "config.get_penalty_function("
+                                     "'squarenorm-fro', None)",
+                     "scaling_factor": l1,
+                     "is_mean_penalty": False},
+                    {"path_functional": "config.get_mean_rel_return",
+                     "ref_value": path_wise_ref_val2_2.tolist(),
+                     "penalty_func": "lambda x,y: torch.linalg.norm(x-y, ord=2)**2",
+                     "scaling_factor": l2,
+                     "is_mean_penalty": True}]],
+                gen_dict=[gen],
+                disc_dict=[disc],
+                saved_models_path=[path_lambdagrid_pwp_smalltranscost6],
+                use_penalty_for_gen=[True],
+                eval_on_train=[False],
+                eval_noise_std=[e_n],
+                eval_noise_std_drift=[e_n_d],
+                eval_noise_seed=[8979],
+                eval_noise_type=["cumulative"],
+                trans_cost_base=[0],
+                trans_cost_perc=[ptc],
+                ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+                    mu_S, sigma_S, gamma, ptc)],
+                seed=[364,],
+            )
+            # params_list_lambdagrid_pwp_smalltranscost6 += get_parameter_array(
+            #     param_dict=param_dict_lambdagrid)
+
+TO_dict_lambdagrid_pwp_smalltranscost6 = dict(
+    ids_from=1, ids_to=len(params_list_lambdagrid_pwp_smalltranscost6),
+    path=path_lambdagrid_pwp_smalltranscost6,
+    params_extract_desc=(
+        'gen_dict', 'disc_dict', 'learning_rate_D',
+        'learning_rate_G', 'opt_steps_D_G', 'batch_size',
+        "epochs", 'utility_func', 'initial_wealth',
+        "penalty_function_ref_value",
+        "penalty_function_ref_value_drift",
+        "path_wise_penalty-0-scaling_factor",
+        "path_wise_penalty-1-scaling_factor",
+        "data_dict", "eval_noise_std", "eval_noise_std_drift",
+        "eval_noise_type", "seed",
+        "trans_cost_perc", "trans_cost_base",),
+    vals_metric_extract=(
+        ("max", "eval_expected_utility", "eval_expected_utility",
+         "max-eval_expected_utility"),
+        ("last", "analytic_sol_penalty", "analytic_sol_penalty",
+         "analytic_sol_penalty"),
+        ("last", "analytic_sol_expected_utility",
+         "analytic_sol_expected_utility", "analytic_sol_expected_utility"),
+        ("max", "eval_expected_util_with_analytic_par",
+         "eval_expected_util_with_analytic_par",
+         "max-eval_expected_util_with_analytic_par"),
+        ("max", "eval_expected_util_with_noisy_par",
+         "eval_expected_util_with_noisy_par",
+         "max-eval_expected_util_with_noisy_par"),
+        ("max", "eval_expected_utility_with_ref_strategy_noisy_par",
+         "eval_expected_utility_with_ref_strategy_noisy_par",
+         "max-eval_expected_utility_with_ref_strategy_noisy_par")
+    ),
+    sortby=["min_exp_util_with_noisy_par"],
+    model_eval_file="model_evaluation2.csv",
+    # plot_penalty_scaling_plots=dict(
+    #     psf_col1='path_wise_penalty-0-scaling_factor',
+    #     psf_col2='path_wise_penalty-1-scaling_factor',
+    #     target_col='min_exp_util_with_noisy_par',
+    #     remove_rows={"min_exp_util_with_noisy_par": np.nan,
+    #                  # 'path_wise_penalty-1-scaling_factor': 0.01
+    #                  },)
+)
+
+# eval_model_dict_lambdagrid_pwp_smalltranscost6 = dict(
+#     filename="model_evaluation1",
+#     model_ids=list(range(1, 1+len(params_list_lambdagrid_pwp_smalltranscost6))),
+#     load_best=True,
+#     nb_evaluations=1000,
+#     noise_std=0.075,
+#     noise_std_drift=0.01,
+#     noise_type="cumulative",
+#     test_data_dict="data_dict0_6_test",
+#     saved_models_path=path_lambdagrid_pwp_smalltranscost6)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost6_nonoise = dict(
+    filename="model_evaluation2",
+    model_ids=list(range(1,8)),
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_6_test_large",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost6)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost6_1 = dict(
+    filename="model_eval_plot",
+    model_ids=[2],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_6_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    plot_ref_nb_stocks_NN=False,
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost6)
+
+# plot_model_dict_lambdagrid_pwp_smalltranscost6_2 = dict(
+#     filename="model_eval_plot",
+#     model_ids=[],
+#     load_best=True,
+#     nb_evaluations=1,
+#     noise_std=0.075,
+#     noise_std_drift=0.01,
+#     noise_type="cumulative",
+#     test_data_dict="data_dict0_6_test",
+#     plot_strategy_refstrategy=[0,1,2,3,4,],
+#     load_saved_eval=False,
+#     noisy_eval=False,
+#     saved_models_path=path_lambdagrid_pwp_smalltranscost6)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost6_baseline = dict(
+    which_eval="baseline",
+    model_ids=[2],
+    load_best=True,
+    plot_eval_paths=None,
+    discount=True,
+    test_data_dict="data_dict0_6_test_large",
+    compute_value_at_risk=0.05,
+    compute_for_ref_strategy=True,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost6)
+
+
+# --------- larger time horizon with small market------------
+r = 0.015
+data_dict0_7 = {
+    "S0": [1], "dt": 1/130., "r": r, "nb_steps": 260, "nb_samples": 200000,
+    "seed": 3940
+}
+data_dict0_7_test = {
+    "S0": [1], "dt": 1/130., "r": r, "nb_steps": 260, "nb_samples": 40000,
+    "seed": 3941
+}
+data_dict0_7_test_large = {
+    "S0": [1], "dt": 1/130., "r": r, "nb_steps": 260, "nb_samples": 100000,
+    "seed": 3942
+}
+
+T = 2
+mu_S = 0.04
+sigma_S = 0.35
+mu = [r+mu_S,]
+sigma = [[sigma_S,]]
+gamma = 0.5  # power of utility
+path_wise_ref_val1_2 = np.array(sigma)**2*T
+path_wise_ref_val2_2 = np.exp(np.array(mu)*T)
+ptc = 0.01  # proportional trading costs
+
+
+path_lambdagrid_pwp_smalltranscost7 = \
+    "{}saved_models_lambdagrid_pwp_smalltranscost7/".format(data_path)
+params_list_lambdagrid_pwp_smalltranscost7 = []
+
+# non-robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_2, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_3, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_4, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_5, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (rnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_6, disc_dict_no_disc_2, 0., 0., [0,1]),
+]:
+    param_dict_lambdagrid = dict(
+        test_size=[0.2],
+        data_dict=['data_dict0_7'],
+        epochs=[150],
+        learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+        lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+        lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+        beta1_D=[0.9, ], beta2_D=[0.999, ],
+        beta1_G=[0.9, ], beta2_G=[0.999, ],
+        opt_steps_D_G=[opt_s],
+        batch_size=[1000],
+        penalty_scaling_factor=[0.],
+        penalty_scaling_factor_drift=[0.],
+        initial_wealth=[1.],
+        utility_func=["powerc-{}".format(gamma)],
+        penalty_func=[None, ],
+        penalty_func_drift=[None, ],
+        penalty_function_ref_value=[sigma,],
+        penalty_function_ref_value_drift=[mu],
+        gen_dict=[gen],
+        disc_dict=[disc],
+        saved_models_path=[path_lambdagrid_pwp_smalltranscost7],
+        use_penalty_for_gen=[True],
+        eval_on_train=[False],
+        eval_noise_std=[e_n],
+        eval_noise_std_drift=[e_n_d],
+        eval_noise_seed=[8979],
+        eval_noise_type=["cumulative"],
+        trans_cost_base=[0],
+        trans_cost_perc=[ptc],
+        ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+            mu_S, sigma_S, gamma, ptc)],
+        seed=[364],
+    )
+    params_list_lambdagrid_pwp_smalltranscost7 += get_parameter_array(
+        param_dict=param_dict_lambdagrid)
+
+# fully robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, ffnn_dict1_d, 0.15, 0.02, [1,1]),]:
+    for l1 in [0.01, 0.5, 0.1, 1., 10, 100]:
+        for l2 in [0.01, 0.5, 0.1, 1., 10, 100]:
+            param_dict_lambdagrid = dict(
+                test_size=[0.2],
+                data_dict=['data_dict0_7'],
+                epochs=[150],
+                learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+                lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+                lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+                beta1_D=[0.9, ], beta2_D=[0.999, ],
+                beta1_G=[0.9, ], beta2_G=[0.999, ],
+                opt_steps_D_G=[opt_s],
+                batch_size=[1000],
+                penalty_scaling_factor=[0.],
+                penalty_scaling_factor_drift=[0.],
+                initial_wealth=[1.],
+                utility_func=["powerc-{}".format(gamma)],
+                penalty_func=[None, ],
+                penalty_func_drift=[None, ],
+                penalty_function_ref_value=[
+                    sigma, ],
+                penalty_function_ref_value_drift=[mu],
+                path_wise_penalty=[[
+                    {"path_functional": "config.get_quad_covar_log",
+                     "ref_value": path_wise_ref_val1_2.tolist(),
+                     "penalty_func": "config.get_penalty_function("
+                                     "'squarenorm-fro', None)",
+                     "scaling_factor": l1,
+                     "is_mean_penalty": False},
+                    {"path_functional": "config.get_mean_rel_return",
+                     "ref_value": path_wise_ref_val2_2.tolist(),
+                     "penalty_func": "lambda x,y: torch.linalg.norm(x-y, ord=2)**2",
+                     "scaling_factor": l2,
+                     "is_mean_penalty": True}]],
+                gen_dict=[gen],
+                disc_dict=[disc],
+                saved_models_path=[path_lambdagrid_pwp_smalltranscost7],
+                use_penalty_for_gen=[True],
+                eval_on_train=[False],
+                eval_noise_std=[e_n],
+                eval_noise_std_drift=[e_n_d],
+                eval_noise_seed=[8979],
+                eval_noise_type=["cumulative"],
+                trans_cost_base=[0],
+                trans_cost_perc=[ptc],
+                ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+                    mu_S, sigma_S, gamma, ptc)],
+                seed=[364,],
+            )
+            # params_list_lambdagrid_pwp_smalltranscost7 += get_parameter_array(
+            #     param_dict=param_dict_lambdagrid)
+
+TO_dict_lambdagrid_pwp_smalltranscost7 = dict(
+    ids_from=1, ids_to=len(params_list_lambdagrid_pwp_smalltranscost7),
+    path=path_lambdagrid_pwp_smalltranscost7,
+    params_extract_desc=(
+        'gen_dict', 'disc_dict', 'learning_rate_D',
+        'learning_rate_G', 'opt_steps_D_G', 'batch_size',
+        "epochs", 'utility_func', 'initial_wealth',
+        "penalty_function_ref_value",
+        "penalty_function_ref_value_drift",
+        "path_wise_penalty-0-scaling_factor",
+        "path_wise_penalty-1-scaling_factor",
+        "data_dict", "eval_noise_std", "eval_noise_std_drift",
+        "eval_noise_type", "seed",
+        "trans_cost_perc", "trans_cost_base",),
+    vals_metric_extract=(
+        ("max", "eval_expected_utility", "eval_expected_utility",
+         "max-eval_expected_utility"),
+        ("last", "analytic_sol_penalty", "analytic_sol_penalty",
+         "analytic_sol_penalty"),
+        ("last", "analytic_sol_expected_utility",
+         "analytic_sol_expected_utility", "analytic_sol_expected_utility"),
+        ("max", "eval_expected_util_with_analytic_par",
+         "eval_expected_util_with_analytic_par",
+         "max-eval_expected_util_with_analytic_par"),
+        ("max", "eval_expected_util_with_noisy_par",
+         "eval_expected_util_with_noisy_par",
+         "max-eval_expected_util_with_noisy_par"),
+        ("max", "eval_expected_utility_with_ref_strategy_noisy_par",
+         "eval_expected_utility_with_ref_strategy_noisy_par",
+         "max-eval_expected_utility_with_ref_strategy_noisy_par")
+    ),
+    sortby=["min_exp_util_with_noisy_par"],
+    model_eval_file="model_evaluation2.csv",
+    # plot_penalty_scaling_plots=dict(
+    #     psf_col1='path_wise_penalty-0-scaling_factor',
+    #     psf_col2='path_wise_penalty-1-scaling_factor',
+    #     target_col='min_exp_util_with_noisy_par',
+    #     remove_rows={"min_exp_util_with_noisy_par": np.nan,
+    #                  # 'path_wise_penalty-1-scaling_factor': 0.01
+    #                  },)
+)
+
+# eval_model_dict_lambdagrid_pwp_smalltranscost6 = dict(
+#     filename="model_evaluation1",
+#     model_ids=list(range(1, 1+len(params_list_lambdagrid_pwp_smalltranscost6))),
+#     load_best=True,
+#     nb_evaluations=1000,
+#     noise_std=0.075,
+#     noise_std_drift=0.01,
+#     noise_type="cumulative",
+#     test_data_dict="data_dict0_6_test",
+#     saved_models_path=path_lambdagrid_pwp_smalltranscost6)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost7_nonoise = dict(
+    filename="model_evaluation2",
+    model_ids=list(range(1,8)),
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_7_test_large",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost7)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost7_1 = dict(
+    filename="model_eval_plot",
+    model_ids=[7],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_7_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    plot_ref_nb_stocks_NN=False,
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost7)
+
+# plot_model_dict_lambdagrid_pwp_smalltranscost6_2 = dict(
+#     filename="model_eval_plot",
+#     model_ids=[],
+#     load_best=True,
+#     nb_evaluations=1,
+#     noise_std=0.075,
+#     noise_std_drift=0.01,
+#     noise_type="cumulative",
+#     test_data_dict="data_dict0_6_test",
+#     plot_strategy_refstrategy=[0,1,2,3,4,],
+#     load_saved_eval=False,
+#     noisy_eval=False,
+#     saved_models_path=path_lambdagrid_pwp_smalltranscost6)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost7_baseline = dict(
+    which_eval="baseline",
+    model_ids=[7],
+    load_best=True,
+    plot_eval_paths=None,
+    discount=True,
+    test_data_dict="data_dict0_7_test_large",
+    compute_value_at_risk=0.05,
+    compute_for_ref_strategy=True,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost7)
+
+
+# --------- smaller time horizon with small market------------
+r = 0.015
+data_dict0_8 = {
+    "S0": [1], "dt": 1/650., "r": r, "nb_steps": 65, "nb_samples": 200000,
+    "seed": 3940
+}
+data_dict0_8_test = {
+    "S0": [1], "dt": 1/650., "r": r, "nb_steps": 65, "nb_samples": 40000,
+    "seed": 3941
+}
+data_dict0_8_test_large = {
+    "S0": [1], "dt": 1/650., "r": r, "nb_steps": 65, "nb_samples": 100000,
+    "seed": 3942
+}
+
+T = 0.1
+mu_S = 0.04
+sigma_S = 0.35
+mu = [r+mu_S,]
+sigma = [[sigma_S,]]
+gamma = 0.5  # power of utility
+path_wise_ref_val1_2 = np.array(sigma)**2*T
+path_wise_ref_val2_2 = np.exp(np.array(mu)*T)
+ptc = 0.01  # proportional trading costs
+
+
+path_lambdagrid_pwp_smalltranscost8 = \
+    "{}saved_models_lambdagrid_pwp_smalltranscost8/".format(data_path)
+params_list_lambdagrid_pwp_smalltranscost8 = []
+
+# non-robust
+for gen, disc, e_n, e_n_d, opt_s in [
+    (ffnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_2, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_3, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_4, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_5, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (rnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+    (ffnn_dict1_6, disc_dict_no_disc_2, 0., 0., [0,1]),
+]:
+    param_dict_lambdagrid = dict(
+        test_size=[0.2],
+        data_dict=['data_dict0_8'],
+        epochs=[150],
+        learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+        lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+        lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+        beta1_D=[0.9, ], beta2_D=[0.999, ],
+        beta1_G=[0.9, ], beta2_G=[0.999, ],
+        opt_steps_D_G=[opt_s],
+        batch_size=[1000],
+        penalty_scaling_factor=[0.],
+        penalty_scaling_factor_drift=[0.],
+        initial_wealth=[1.],
+        utility_func=["powerc-{}".format(gamma)],
+        penalty_func=[None, ],
+        penalty_func_drift=[None, ],
+        penalty_function_ref_value=[sigma,],
+        penalty_function_ref_value_drift=[mu],
+        gen_dict=[gen],
+        disc_dict=[disc],
+        saved_models_path=[path_lambdagrid_pwp_smalltranscost8],
+        use_penalty_for_gen=[True],
+        eval_on_train=[False],
+        eval_noise_std=[e_n],
+        eval_noise_std_drift=[e_n_d],
+        eval_noise_seed=[8979],
+        eval_noise_type=["cumulative"],
+        trans_cost_base=[0],
+        trans_cost_perc=[ptc],
+        ref_strategy=["config.get_ref_strategy_BS_STC("
+                      "mu={}, sigma={}, gamma={}, ptc={})".format(
+            mu_S, sigma_S, gamma, ptc)],
+        seed=[364],
+    )
+    params_list_lambdagrid_pwp_smalltranscost8 += get_parameter_array(
+        param_dict=param_dict_lambdagrid)
+
+TO_dict_lambdagrid_pwp_smalltranscost8 = dict(
+    ids_from=1, ids_to=len(params_list_lambdagrid_pwp_smalltranscost8),
+    path=path_lambdagrid_pwp_smalltranscost8,
+    params_extract_desc=(
+        'gen_dict', 'disc_dict', 'learning_rate_D',
+        'learning_rate_G', 'opt_steps_D_G', 'batch_size',
+        "epochs", 'utility_func', 'initial_wealth',
+        "penalty_function_ref_value",
+        "penalty_function_ref_value_drift",
+        "path_wise_penalty-0-scaling_factor",
+        "path_wise_penalty-1-scaling_factor",
+        "data_dict", "eval_noise_std", "eval_noise_std_drift",
+        "eval_noise_type", "seed",
+        "trans_cost_perc", "trans_cost_base",),
+    vals_metric_extract=(
+        ("max", "eval_expected_utility", "eval_expected_utility",
+         "max-eval_expected_utility"),
+        ("last", "analytic_sol_penalty", "analytic_sol_penalty",
+         "analytic_sol_penalty"),
+        ("last", "analytic_sol_expected_utility",
+         "analytic_sol_expected_utility", "analytic_sol_expected_utility"),
+        ("max", "eval_expected_util_with_analytic_par",
+         "eval_expected_util_with_analytic_par",
+         "max-eval_expected_util_with_analytic_par"),
+        ("max", "eval_expected_util_with_noisy_par",
+         "eval_expected_util_with_noisy_par",
+         "max-eval_expected_util_with_noisy_par"),
+        ("max", "eval_expected_utility_with_ref_strategy_noisy_par",
+         "eval_expected_utility_with_ref_strategy_noisy_par",
+         "max-eval_expected_utility_with_ref_strategy_noisy_par")
+    ),
+    sortby=["min_exp_util_with_noisy_par"],
+    model_eval_file="model_evaluation2.csv",
+)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost8_nonoise = dict(
+    filename="model_evaluation2",
+    model_ids=list(range(1,8)),
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_8_test_large",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost8)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost8_1 = dict(
+    filename="model_eval_plot",
+    model_ids=[7],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_8_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    plot_ref_nb_stocks_NN=False,
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost8)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost8_baseline = dict(
+    which_eval="baseline",
+    model_ids=[7],
+    load_best=True,
+    plot_eval_paths=None,
+    discount=True,
+    test_data_dict="data_dict0_8_test_large",
+    compute_value_at_risk=0.05,
+    compute_for_ref_strategy=True,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost8)
+
+
+# --------- smaller trading costs with small market------------
+r = 0.015
+T = 1.
+mu_S = 0.04
+sigma_S = 0.35
+mu = [r+mu_S,]
+sigma = [[sigma_S,]]
+gamma = 0.5  # power of utility
+path_wise_ref_val1_2 = np.array(sigma)**2*T
+path_wise_ref_val2_2 = np.exp(np.array(mu)*T)
+
+
+path_lambdagrid_pwp_smalltranscost9 = \
+    "{}saved_models_lambdagrid_pwp_smalltranscost9/".format(data_path)
+params_list_lambdagrid_pwp_smalltranscost9 = []
+
+# non-robust
+for ptc in [0.001, 0.0001]:
+    for gen, disc, e_n, e_n_d, opt_s in [
+        (ffnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+        (ffnn_dict1_2, disc_dict_no_disc_2, 0., 0., [0,1]),
+        (ffnn_dict1_3, disc_dict_no_disc_2, 0., 0., [0,1]),
+        (ffnn_dict1_4, disc_dict_no_disc_2, 0., 0., [0,1]),
+        (ffnn_dict1_5, disc_dict_no_disc_2, 0., 0., [0,1]),
+        (rnn_dict1, disc_dict_no_disc_2, 0., 0., [0,1]),
+        (ffnn_dict1_6, disc_dict_no_disc_2, 0., 0., [0,1]),
+    ]:
+        param_dict_lambdagrid = dict(
+            test_size=[0.2],
+            data_dict=['data_dict0_1'],
+            epochs=[150],
+            learning_rate_D=[5e-4], learning_rate_G=[5e-4],
+            lr_scheduler_D=[{'gamma': 0.2, 'step': 100}],
+            lr_scheduler_G=[{'gamma': 0.2, 'step': 100}],
+            beta1_D=[0.9, ], beta2_D=[0.999, ],
+            beta1_G=[0.9, ], beta2_G=[0.999, ],
+            opt_steps_D_G=[opt_s],
+            batch_size=[1000],
+            penalty_scaling_factor=[0.],
+            penalty_scaling_factor_drift=[0.],
+            initial_wealth=[1.],
+            utility_func=["powerc-{}".format(gamma)],
+            penalty_func=[None, ],
+            penalty_func_drift=[None, ],
+            penalty_function_ref_value=[sigma,],
+            penalty_function_ref_value_drift=[mu],
+            gen_dict=[gen],
+            disc_dict=[disc],
+            saved_models_path=[path_lambdagrid_pwp_smalltranscost9],
+            use_penalty_for_gen=[True],
+            eval_on_train=[False],
+            eval_noise_std=[e_n],
+            eval_noise_std_drift=[e_n_d],
+            eval_noise_seed=[8979],
+            eval_noise_type=["cumulative"],
+            trans_cost_base=[0],
+            trans_cost_perc=[ptc],
+            ref_strategy=["config.get_ref_strategy_BS_STC("
+                          "mu={}, sigma={}, gamma={}, ptc={})".format(
+                mu_S, sigma_S, gamma, ptc)],
+            seed=[364],
+        )
+        params_list_lambdagrid_pwp_smalltranscost9 += get_parameter_array(
+            param_dict=param_dict_lambdagrid)
+
+TO_dict_lambdagrid_pwp_smalltranscost9 = dict(
+    ids_from=1, ids_to=len(params_list_lambdagrid_pwp_smalltranscost9),
+    path=path_lambdagrid_pwp_smalltranscost9,
+    params_extract_desc=(
+        'gen_dict', 'disc_dict', 'learning_rate_D',
+        'learning_rate_G', 'opt_steps_D_G', 'batch_size',
+        "epochs", 'utility_func', 'initial_wealth',
+        "penalty_function_ref_value",
+        "penalty_function_ref_value_drift",
+        "path_wise_penalty-0-scaling_factor",
+        "path_wise_penalty-1-scaling_factor",
+        "data_dict", "eval_noise_std", "eval_noise_std_drift",
+        "eval_noise_type", "seed",
+        "trans_cost_perc", "trans_cost_base",),
+    vals_metric_extract=(
+        ("max", "eval_expected_utility", "eval_expected_utility",
+         "max-eval_expected_utility"),
+        ("last", "analytic_sol_penalty", "analytic_sol_penalty",
+         "analytic_sol_penalty"),
+        ("last", "analytic_sol_expected_utility",
+         "analytic_sol_expected_utility", "analytic_sol_expected_utility"),
+        ("max", "eval_expected_util_with_analytic_par",
+         "eval_expected_util_with_analytic_par",
+         "max-eval_expected_util_with_analytic_par"),
+        ("max", "eval_expected_util_with_noisy_par",
+         "eval_expected_util_with_noisy_par",
+         "max-eval_expected_util_with_noisy_par"),
+        ("max", "eval_expected_utility_with_ref_strategy_noisy_par",
+         "eval_expected_utility_with_ref_strategy_noisy_par",
+         "max-eval_expected_utility_with_ref_strategy_noisy_par")
+    ),
+    sortby=["min_exp_util_with_noisy_par"],
+    model_eval_file="model_evaluation2.csv",
+)
+
+eval_model_dict_lambdagrid_pwp_smalltranscost9_nonoise = dict(
+    filename="model_evaluation2",
+    model_ids=list(range(1,15)),
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_1_test_large",
+    saved_models_path=path_lambdagrid_pwp_smalltranscost9)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost9_1 = dict(
+    filename="model_eval_plot",
+    model_ids=[7, 10],
+    load_best=True,
+    nb_evaluations=1,
+    noise_std=0.0,
+    noise_std_drift=0.0,
+    noise_type="cumulative",
+    test_data_dict="data_dict0_1_test",
+    plot_strategy_refstrategy=[0,1,2,3,4,],
+    plot_ref_nb_stocks_NN=False,
+    load_saved_eval=False,
+    noisy_eval=False,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost9)
+
+plot_model_dict_lambdagrid_pwp_smalltranscost9_baseline = dict(
+    which_eval="baseline",
+    model_ids=[7, 10],
+    load_best=True,
+    plot_eval_paths=None,
+    discount=True,
+    test_data_dict="data_dict0_1_test_large",
+    compute_value_at_risk=0.05,
+    compute_for_ref_strategy=True,
+    saved_models_path=path_lambdagrid_pwp_smalltranscost9)
 
 
 

@@ -23,12 +23,31 @@ First generate the needed datasets.
 python code/data_utils.py --data_gen_dict=data_dict1 --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict2 --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict3 --DATA_NB_JOBS=4
+
 python code/data_utils.py --data_gen_dict=data_dict0_1 --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict0_1_test --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict0_1_test_large --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict0_2 --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict0_2_test --DATA_NB_JOBS=4
 python code/data_utils.py --data_gen_dict=data_dict0_2_test_large --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_3 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_3_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_3_test_large --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_4 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_4_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_4_test_large --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_5 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_5_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_5_test_large --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_6 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_6_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_6_test_large --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_7 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_7_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_7_test_large --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_8 --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_8_test --DATA_NB_JOBS=4
+python code/data_utils.py --data_gen_dict=data_dict0_8_test_large --DATA_NB_JOBS=4
 ```
 
 ### Training of models
@@ -166,6 +185,43 @@ python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_
 python code/run.py --NB_JOBS=1 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost2_nonoise
 ```
 
+```shell
+python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost3 --NB_JOBS=48 --NB_CPUS=1 --SEND=True --first_id=1 --get_overview=TO_dict_lambdagrid_pwp_smalltranscost3 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost3
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost3_1
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost3_2
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost3_baseline
+python code/run.py --NB_JOBS=1 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost3_nonoise
+```
 
+```shell
+python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost4 --NB_JOBS=48 --NB_CPUS=1 --SEND=True --first_id=1 --get_overview=TO_dict_lambdagrid_pwp_smalltranscost4 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost4_nonoise
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost4_1
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost4_baseline
+```
 
+```shell
+python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost5 --NB_JOBS=48 --NB_CPUS=1 --SEND=True --first_id=1 --get_overview=TO_dict_lambdagrid_pwp_smalltranscost5 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost5
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost5_1
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost5_2
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost5_baseline
+python code/run.py --NB_JOBS=1 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost5_nonoise
+```
+
+```shell
+python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost6 --NB_JOBS=48 --NB_CPUS=1 --SEND=True --first_id=1 --get_overview=TO_dict_lambdagrid_pwp_smalltranscost6 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost6_nonoise
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost6_1
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost6_baseline
+```
+
+```shell
+python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost7 --NB_JOBS=48 --NB_CPUS=1 --SEND=True --first_id=1 --get_overview=TO_dict_lambdagrid_pwp_smalltranscost7 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost7_nonoise
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost7_1
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost7_baseline
+```
+
+```shell
+python code/run.py --params=params_list_lambdagrid_pwp_smalltranscost8 --NB_JOBS=48 --NB_CPUS=1 --SEND=True --first_id=1 --get_overview=TO_dict_lambdagrid_pwp_smalltranscost8 --evaluate_models=eval_model_dict_lambdagrid_pwp_smalltranscost8_nonoise
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost8_1
+python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost8_baseline
+```
 

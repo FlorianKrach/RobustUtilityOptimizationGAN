@@ -106,6 +106,13 @@ class SDEIncrements(Dataset):
         if "seed" in hyperparams:
             self.seed = hyperparams["seed"]
             np.random.seed(self.seed)
+        self.dist = None
+        if "dist" in hyperparams:
+            self.dist = hyperparams["dist"]
+        self.df = None
+        if self.dist in ["student", "t"]:
+            self.dist = "t"
+            self.df = hyperparams["df"]
 
         if load:
             df_overview, _, _ = get_dataset_overview(self.training_data_path)
@@ -123,14 +130,22 @@ class SDEIncrements(Dataset):
         if not load:
             if self.verbose > 0:
                 print("generate dataset ...")
-            self.increments = self.generate_stochastic_increments()
+            self.increments = self.generate_stochastic_increments(
+                dist=self.dist, df=self.df)
             self.save_dataset()
 
         self.increments = self.increments[self.idx]
 
-    def generate_stochastic_increments(self, *args, **kwargs):
-        random_numbers = np.random.normal(
-            0, 1, (self.nb_samples, self.dimension, self.nb_steps))
+    def generate_stochastic_increments(
+            self, dist=None, df=None, *args, **kwargs):
+        if dist is None:
+            random_numbers = np.random.normal(
+                0, 1, (self.nb_samples, self.dimension, self.nb_steps))
+        elif dist == "t":
+            random_numbers = np.random.standard_t(
+                df, size=(self.nb_samples, self.dimension, self.nb_steps))
+        else:
+            raise ValueError("distribution not supported")
         dW = random_numbers * np.sqrt(self.dt)
         if self.init_distribution is not None:
             dist = eval("stats."+self.init_distribution["name"])

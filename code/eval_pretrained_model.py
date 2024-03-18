@@ -164,6 +164,12 @@ def plot_hist(values, plot_path, model_id, which, postfix=""):
     plt.title("Final PV (vs. baseline measure) - mean={:.3f}, std={:.3f}".format(
         np.mean(values), np.std(values)))
 
+    if np.any(np.isnan(values)):
+        plt.title("Final PV (vs. baseline measure) - mean={:.3f}, std={:.3f}, "
+                  "#NaNs={}".format(
+            np.nanmean(values), np.nanstd(values),
+            int(np.sum(np.isnan(values)))))
+
     fname = "{}histogram_id{}_{}_{}.pdf".format(
         plot_path, model_id, which, postfix)
     fnames.append(fname)

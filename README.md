@@ -1,6 +1,6 @@
 # Robust Utility Optimization GAN
 
-This repository is the official implementation of the paper [Robust Utility Optimization via a GAN Approach]().
+This repository is the official implementation of the paper [Robust Utility Optimization via a GAN Approach](https://arxiv.org/abs/2403.15243).
 
 ## Installation
 Download the repo, cd into it. 
@@ -225,3 +225,22 @@ python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_
 python code/run.py --NB_JOBS=1 --evaluate_models=plot_model_dict_lambdagrid_pwp_smalltranscost8_baseline
 ```
 
+
+--------------------------------------------------------------------------------
+## Usage, License & Citation
+
+This code can be used in accordance with the [LICENSE](LICENSE).
+
+If you find this code useful or include parts of it in your own work, 
+please cite our paper:  
+
+- [Robust Utility Optimization via a GAN Approach](https://arxiv.org/abs/2403.15243)
+    ```
+    @article{RobustUO
+      url = {https://arxiv.org/abs/2403.15243},
+      author = {Krach, Florian and Teichmann, Josef and Wutte, Hanna},
+      title = {Robust Utility Optimization via a {GAN} Approach},
+      publisher = {arXiv},
+      year = {2024},
+    }
+    ```

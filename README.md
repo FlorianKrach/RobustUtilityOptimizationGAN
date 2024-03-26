@@ -52,8 +52,8 @@ python code/data_utils.py --data_gen_dict=data_dict0_8_test_large --DATA_NB_JOBS
 
 ### Training of models
 Use the parallel_train.py file in combination with the config.py file. 
-First create the wanted configuration dicts in config.py and then use the command-line 
-tools of parallel_train.py to run the training with this configurations.
+First create the wanted configuration dicts in `config.py` and then use the command-line 
+tools of `run.py` to run the training with these configurations.
 
 Example:
 ```sh

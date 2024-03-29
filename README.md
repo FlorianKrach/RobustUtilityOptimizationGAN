@@ -1,5 +1,7 @@
 # Robust Utility Optimization GAN
 
+[![DOI](https://zenodo.org/badge/764250490.svg)](https://zenodo.org/doi/10.5281/zenodo.10893701)
+
 This repository is the official implementation of the paper [Robust Utility Optimization via a GAN Approach](https://arxiv.org/abs/2403.15243).
 
 ## Installation

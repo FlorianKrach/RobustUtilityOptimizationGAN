@@ -238,7 +238,7 @@ please cite our paper:
 
 - [Robust Utility Optimization via a GAN Approach](https://arxiv.org/abs/2403.15243)
     ```
-    @article{RobustUO
+    @article{RobustUO,
       url = {https://arxiv.org/abs/2403.15243},
       author = {Krach, Florian and Teichmann, Josef and Wutte, Hanna},
       title = {Robust Utility Optimization via a {GAN} Approach},
